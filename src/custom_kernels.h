@@ -628,7 +628,7 @@ void outputdist_perplexity_kernel(dType2 *output, dType *input, int dim,bool pri
 		//dType z = exp(input_k[i]-max_k); //subtract the max from the input, then exp it for the softmax
 		double z = cuda_exp_wrapper(input_k[i]-max_k);
 		buffer[threadIdx.x] += z; //keep a running sum of these values for the normalization constant
-		output_k[i] = z; //set the output as this value, then get ready to divide by the sum again
+		output_k[i] = input_k[i] - max_k; //set the output as this value, then get ready to divide by the sum again
 	}
 
  	__syncthreads();
@@ -651,7 +651,7 @@ void outputdist_perplexity_kernel(dType2 *output, dType *input, int dim,bool pri
   	// normalize the softmax
 	double sum_k = buffer[0];
 	for (int i=i_start; i<i_end; i+=i_step) {
-		output_k[i] = cuda_log_wrapper(output_k[i]) - cuda_log_wrapper(sum_k);
+		output_k[i] -= cuda_log_wrapper(sum_k);
 	}
 
 	if(print_partition_function && threadIdx.x == 0) {
@@ -710,7 +710,7 @@ void outputdist_perplexity_kernel_NCE(dType2 *output, dType *input, int dim,bool
 		//dType z = exp(input_k[i]-max_k); //subtract the max from the input, then exp it for the softmax
 		double z = cuda_exp_wrapper(input_k[i]);
 		buffer[threadIdx.x] += z; //keep a running sum of these values for the normalization constant
-		output_k[i] = z; //set the output as this value, then get ready to divide by the sum again
+		output_k[i] = input_k[i]; //set the output as this value, then get ready to divide by the sum again
 	}
 
  	__syncthreads();
@@ -733,7 +733,7 @@ void outputdist_perplexity_kernel_NCE(dType2 *output, dType *input, int dim,bool
   	// normalize the softmax
 	double sum_k = buffer[0];
 	for (int i=i_start; i<i_end; i+=i_step) {
-		output_k[i] = cuda_log_wrapper(output_k[i]) - cuda_log_wrapper(sum_k);
+		output_k[i] -= cuda_log_wrapper(sum_k);
 	}
 
 	if(print_partition_function && threadIdx.x == 0) {
